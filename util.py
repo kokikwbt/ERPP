@@ -34,7 +34,7 @@ class DatasetHandler:
 
 class ATMDataset:
     def __init__(self, config, subset):
-        data = pandas.read_csv(f"data/{subset}_day.csv")
+        data = pandas.read_csv(f"dat/{subset}_day.csv")
         self.subset = subset
         self.id = list(data['id'])
         self.time = list(data['time'])
