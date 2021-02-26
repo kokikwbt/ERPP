@@ -15,6 +15,23 @@ def softmax(x):
     return x / x.sum()
 
 
+class DatasetHandler:
+    def __init__(self, df, config):
+        """
+            df: a DataFrame object with columns:
+                date,event,ctg1,...,ctgk,num1,...,numk
+            
+            config: a named tuple given by main.py
+        """
+        pass
+
+    def generate_sequence(self):
+        pass
+
+    def to_features(self):
+        pass
+
+
 class ATMDataset:
     def __init__(self, config, subset):
         data = pandas.read_csv(f"data/{subset}_day.csv")

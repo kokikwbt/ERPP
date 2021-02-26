@@ -1,5 +1,6 @@
 from util import *
 from argparse import ArgumentParser
+import torch
 from torch.utils.data import DataLoader
 from model import Net
 from tqdm import tqdm
@@ -29,7 +30,7 @@ def evaluate():
 if __name__=="__main__":
     parser = ArgumentParser()
     parser.add_argument("--name", type=str, default="default")
-    parser.add_argument("--model", type=str, default="erpp", help="erpp, rmtpp")
+    parser.add_argument("--model", type=str, default="erpp", choices=['erpp', 'rmtpp'])
     parser.add_argument("--seq_len", type=int, default=10)
     parser.add_argument("--emb_dim", type=int, default=10)
     parser.add_argument("--hid_dim", type=int, default=32)
@@ -42,6 +43,7 @@ if __name__=="__main__":
     parser.add_argument("--importance_weight", action="store_true")
     parser.add_argument("--lr", type=int, default=1e-3)
     parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--save_model", type=str, default="out/model.pth")
     config = parser.parse_args()
 
     train_set = ATMDataset(config, subset='train')
@@ -73,3 +75,9 @@ if __name__=="__main__":
                 range_loss1 = range_loss2 = range_loss = 0
 
         evaluate()
+
+    # https://pytorch.org/tutorials/beginner/saving_loading_models.html
+    # .pt or .pth
+    # How to load: model.load_state_dict(torch.load("model.pth"))
+    if config.save_model is not None:
+        torch.save(model.state_dict(), config.save_model)
