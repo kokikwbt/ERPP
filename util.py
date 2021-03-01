@@ -1,4 +1,4 @@
-import pandas
+import pandas as pd
 from tqdm import tqdm
 import numpy as np
 import torch
@@ -16,26 +16,77 @@ def softmax(x):
 
 
 class DatasetHandler:
-    def __init__(self, df, config):
+    def __init__(self, data, config):
         """
             df: a DataFrame object with columns:
                 date,event,ctg1,...,ctgk,num1,...,numk
-            
             config: a named tuple given by main.py
         """
-        pass
+        self.data = data  # DataFrame
+        self.config = config  # duplicate?
+
+        # List of features considered as discrete event series
+        self.ev_ctg_features = config.ev_ctg_features
+        self.ev_num_features = config.ev_num_features
+        if config.ev_ctg_features is not None:
+            if '/' in config.ev_ctg_features:
+                self.ev_ctg_features = config.ev_ctg_features.split('/')
+        if config.ev_num_features is not None:
+            if '/' in config.ev_num_features:
+                self.ev_num_features = config.ev_num_features.split('/')
+
+        # List of features considered as time series
+        self.ts_ctg_features = config.ts_ctg_features
+        self.ts_num_features = config.ts_num_features
+        if self.ts_ctg_features is not None:
+            if '/' in config.ts_ctg_features:
+                self.ts_ctg_features = config.ts_ctg_features.split('/')
+        if self.ts_num_features is not None:
+            if '/' in config.ts_num_features:
+                self.ts_num_features = config.ts_num_features.split('/')
+
+        # Lengths of sequences per input sample
+        self.ev_seq_len = config.ev_seq_len
+        self.ts_seq_len = config.ts_seq_len
+
+        # Preparing for input features
+        self.generate_sequence()
+        # self.statistic()  # Visualize
 
     def generate_sequence(self):
         pass
 
+    @staticmethod
     def to_features(self):
         pass
+
+    @staticmethod
+    def to_timeseries_features(self, keys, batch, freq):
+        return   # torch.
+
+    def statistic(self):
+        print("TOTAL SEQs:", len(self.time_seqs))
+        # for i in range(10):
+        #     print(self.time_seqs[i], "\n", self.event_seqs[i])
+        intervals = np.diff(np.array(self.time))
+        for thr in [0.001, 0.01, 0.1, 1, 10, 100]:
+            print(f"<{thr} = {np.mean(intervals < thr)}")
+
+    def importance_weight(self):
+        count = Counter(self.event)
+        percentage = [count[k] / len(self.event) for k in sorted(count.keys())]
+        for i, p in enumerate(percentage):
+            print(f"event{i} = {p * 100}%")
+        weight = [len(self.event) / count[k] for k in sorted(count.keys())]
+        return weight
 
 
 class ATMDataset:
     def __init__(self, config, subset):
-        data = pandas.read_csv(f"dat/{subset}_day.csv")
-        self.subset = subset
+        """
+        """
+        data = pd.read_csv(f"dat/{subset}_day.csv")
+        self.subset = subset  # train/test
         self.id = list(data['id'])
         self.time = list(data['time'])
         self.event = list(data['event'])
