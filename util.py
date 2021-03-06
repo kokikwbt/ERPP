@@ -1,12 +1,11 @@
-import datetime
+import math
 from datetime import timedelta
+import numpy as np
 import pandas as pd
 from tqdm import tqdm, trange
-import numpy as np
-import torch
 from sklearn import preprocessing
 from collections import Counter
-import math
+import torch
 
 
 def sigmoid(x):
@@ -16,6 +15,7 @@ def sigmoid(x):
 def softmax(x):
     x = np.exp(x)
     return x / x.sum()
+
 
 def embdim(x):
     return int(2 * np.log(x) + 1)
@@ -183,15 +183,15 @@ class EventHandler:
                     self.ev_num_data.iloc[i - esl:i].values)
 
             time_seqs.append(
-                self.time[i - esl:i+2].map(lambda x: x.timestamp()).values)
+                self.time[i - esl:i+2].map(lambda x: x.timestamp()).values * 1e-6)
             event_seqs.append(
                 self.event[i - esl:i+2].values)
 
-        print(len(time_seqs))
-        print(len(ev_num_seqs))
-        print(len(ev_ctg_seqs))
-        print(len(ts_num_seqs))
-        print(len(ts_ctg_seqs))
+        # print(len(time_seqs))
+        # print(len(ev_num_seqs))
+        # print(len(ev_ctg_seqs))
+        # print(len(ts_num_seqs))
+        # print(len(ts_ctg_seqs))
 
         self.time_seqs = time_seqs
         self.event_seqs = event_seqs
@@ -253,13 +253,9 @@ class EventHandler:
             torch.FloatTensor(num_timeseries),
         )
 
-    @staticmethod
-    def to_timeseries_features(self, keys, batch, freq):
-        return   # torch.
-
     def statistic(self):
         print("TOTAL SEQs:", len(self.time_seqs))
-        intervals = np.diff(np.array(self.time)).astype(float) * 1e-12
+        intervals = np.diff(np.array(self.time)).astype(float) * 1e-10
         for thr in [0.001, 0.01, 0.1, 1, 10, 100]:
             print(f"< {thr} \t= {np.mean(intervals < thr)}")
 

@@ -1,4 +1,5 @@
 import argparse
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import torch
@@ -6,7 +7,6 @@ from torch.utils.data import DataLoader
 
 import erpp
 import util
-
 
 
 def evaluate():
@@ -23,8 +23,8 @@ def evaluate():
     gold_times = np.concatenate(gold_times).reshape(-1)
     pred_events = np.concatenate(pred_events).reshape(-1)
     gold_events = np.concatenate(gold_events).reshape(-1)
-    time_error = abs_error(pred_times, gold_times)
-    acc, recall, f1 = clf_metric(pred_events, gold_events, n_class=config.event_class)
+    time_error = util.abs_error(pred_times, gold_times)
+    acc, recall, f1 = util.clf_metric(pred_events, gold_events, n_class=config.event_class)
     print(f"epoch {epc}")
     print(f"time_error: {time_error}, PRECISION: {acc}, RECALL: {recall}, F1: {f1}")
 
@@ -61,22 +61,29 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--event_class', type=int, default=7)
     parser.add_argument('--verbose_step', type=int, default=1)
-    parser.add_argument('--importance_weight', action='store_true')
     parser.add_argument('--lr', type=int, default=1e-3)
     parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--importance_weight', action='store_true')
+    parser.add_argument('--calibration_date', type=str, default=None)
 
     # Output
     parser.add_argument('--save_model', type=str, default='out/model.pth')
     parser.add_argument('--save_inputs', type=str, default='out/inputs.csv')
+    parser.add_argument('--save_config', type=str, default='out/config.json')
     parser.add_argument('--save_prediction', type=str, default='out/')
 
     config = parser.parse_args()
-
     data = pd.read_csv(config.filename)
 
     print('Original data:')
     print(data.head())
     print()
+
+    if config.seed > 0:
+        pass
+
+    # Make inputs
 
     event_handler = util.EventHandler(data, config)
     train_loader = DataLoader(event_handler,
@@ -84,35 +91,27 @@ if __name__ == '__main__':
                               shuffle=True,
                               collate_fn=util.EventHandler.to_features)
 
-    print('CATEGORICAL FEATURES IN EVENT SERIES')
-    print(event_handler.ev_ctg_features)
-    print()
-    print('NUMERICAL FEATURES IN EVENT SERIES')
-    print(event_handler.ev_num_features)
-    print()
-    print('CATEGORICAL FEATURES IN TIME SERIES')
-    print(event_handler.ts_ctg_features)
-    print()
-    print('NUMERICAL FEATURES IN TIME SERIES')
-    print(event_handler.ts_num_features)
-    print()
+    weight = np.ones(event_handler.config['event_class'])
+    if config.importance_weight:
+        weight = event_handler.importance_weight()
+        print('Importance weight:', weight)
 
-    # Make inputs
-    weight = [1] * 10
+    epochs = config.epochs
     model = erpp.ERPP(event_handler.config, lossweight=weight)
-    model.set_optimizer(total_step=len(train_loader) * config.epochs, use_bert=True)
+    model.set_optimizer(total_step=len(train_loader) * epochs,
+                        use_bert=True)
     model.cuda()
 
-    for epc in range(config.epochs):
+    for epc in range(epochs):
         model.train()
         range_loss1 = range_loss2 = range_loss = 0
+
         for i, batch in enumerate(tqdm(train_loader)):
             l1, l2, l = model.train_batch(batch)
             range_loss1 += l1
             range_loss2 += l2
             range_loss += l
 
-        # if (i + 1) % config.verbose_step == 0:
         if epc % config.verbose_step == 0:
             print("time  loss:", range_loss1 / config.verbose_step)
             print("event loss:", range_loss2 / config.verbose_step)
@@ -126,3 +125,12 @@ if __name__ == '__main__':
     # How to load: model.load_state_dict(torch.load("model.pth"))
     if config.save_model is not None:
         torch.save(model.state_dict(), config.save_model)
+
+    if config.save_inputs is not None:
+        pass
+
+    if config.save_config is not None:
+        pass
+
+    if config.save_prediction is not None:
+        pass
