@@ -1,3 +1,6 @@
+import json
+import os
+import shutil
 import math
 from datetime import timedelta
 import numpy as np
@@ -6,6 +9,17 @@ from tqdm import tqdm, trange
 from sklearn import preprocessing
 from collections import Counter
 import torch
+
+
+def set_workspace(directory_name):
+    if os.path.exists(directory_name):
+        shutil.rmtree(directory_name)
+    os.makedirs(directory_name)
+
+
+def saveas_json(data, fn):
+    with open(fn, 'w') as jsonfile:
+        json.dump(data, jsonfile)
 
 
 def sigmoid(x):
@@ -262,8 +276,8 @@ class EventHandler:
     def importance_weight(self):
         count = Counter(self.event)
         percentage = [count[k] / len(self.event) for k in sorted(count.keys())]
-        for i, p in enumerate(percentage):
-            print(f"event{i} = {p * 100}%")
+        # for i, p in enumerate(percentage):
+        #     print(f"event{i} = {p * 100}%")
         weight = [len(self.event) / count[k] for k in sorted(count.keys())]
         return weight
 
@@ -361,3 +375,5 @@ def clf_metric(pred, gold, n_class):
     print(f"pcnt={pcnt}, rcnt={rcnt}")
     f1 = 2 * prec * recall / (prec + recall)
     return prec, recall, f1
+
+

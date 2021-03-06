@@ -62,16 +62,17 @@ if __name__ == '__main__':
     parser.add_argument('--event_class', type=int, default=7)
     parser.add_argument('--verbose_step', type=int, default=1)
     parser.add_argument('--lr', type=int, default=1e-3)
-    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--importance_weight', action='store_true')
     parser.add_argument('--calibration_date', type=str, default=None)
 
     # Output
+    parser.add_argument('--outdir', type=str, default='out/tmp/')
     parser.add_argument('--save_model', type=str, default='out/model.pth')
-    parser.add_argument('--save_inputs', type=str, default='out/inputs.csv')
-    parser.add_argument('--save_config', type=str, default='out/config.json')
-    parser.add_argument('--save_prediction', type=str, default='out/')
+    parser.add_argument('--save_inputs', action='store_true')
+    parser.add_argument('--save_config', action='store_true')
+    parser.add_argument('--save_prediction', action='store_true')
 
     config = parser.parse_args()
     data = pd.read_csv(config.filename)
@@ -94,7 +95,7 @@ if __name__ == '__main__':
     weight = np.ones(event_handler.config['event_class'])
     if config.importance_weight:
         weight = event_handler.importance_weight()
-        print('Importance weight:', weight)
+        # print('Importance weight:', weight)
 
     epochs = config.epochs
     model = erpp.ERPP(event_handler.config, lossweight=weight)
@@ -105,8 +106,8 @@ if __name__ == '__main__':
     for epc in range(epochs):
         model.train()
         range_loss1 = range_loss2 = range_loss = 0
-
-        for i, batch in enumerate(tqdm(train_loader)):
+        desc = 'Epoch {}'.format(epc + 1)
+        for i, batch in enumerate(tqdm(train_loader, desc=desc)):
             l1, l2, l = model.train_batch(batch)
             range_loss1 += l1
             range_loss2 += l2
@@ -123,14 +124,17 @@ if __name__ == '__main__':
     # https://pytorch.org/tutorials/beginner/saving_loading_models.html
     # .pt or .pth
     # How to load: model.load_state_dict(torch.load("model.pth"))
+    util.set_workspace(config.outdir)
+
     if config.save_model is not None:
-        torch.save(model.state_dict(), config.save_model)
+        torch.save(model.state_dict(), config.outdir + 'model.pth')
 
     if config.save_inputs is not None:
         pass
 
     if config.save_config is not None:
-        pass
+        util.saveas_json(event_handler.config,
+                         config.outdir + 'config.json')
 
     if config.save_prediction is not None:
         pass
